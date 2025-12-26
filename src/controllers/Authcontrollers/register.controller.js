@@ -1,44 +1,68 @@
-import bcrypt from "bcrypt";
-import { prisma } from "../../../lib/prisma.js";
-import  ApiError  from "../../utils/ApiError.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
+import bcrypt from "bcryptjs";
+import { prisma } from "../../prismaClient.js";
+import ApiError from "../../utils/ApiError.js";
+import asyncHandler from "../../utils/asyncHandler.js";
 
 export const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { full_name, email, password } = req.body;
 
-  // validation
-  if (!name || !email || !password) {
+  // 1️⃣ Validation
+  if (!full_name || !email || !password) {
     throw new ApiError(400, "All fields are required");
   }
 
-  // check existing user
-  const userExists = await prisma.user.findUnique({
+  // 2️⃣ Check if user already exists
+  const existingUser = await prisma.user.findUnique({
     where: { email },
   });
 
-  if (userExists) {
+  if (existingUser) {
     throw new ApiError(409, "User already exists");
   }
 
-  // hash password
+  // 3️⃣ Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // create user
+  // 4️⃣ Find STUDENT role (seeded earlier)
+  const studentRole = await prisma.role.findFirst({
+    where: { name: "STUDENT" },
+  });
+
+  if (!studentRole) {
+    throw new ApiError(500, "STUDENT role not found");
+  }
+
+  // 5️⃣ Create user + assign role
   const user = await prisma.user.create({
     data: {
-      name,
+      full_name,
       email,
-      password: hashedPassword,
-      role: role || "STUDENT",
+      password_hash: hashedPassword,
+      roles: {
+        create: {
+          role: {
+            connect: { id: studentRole.id },
+          },
+        },
+      },
+    },
+    include: {
+      roles: {
+        include: {
+          role: true,
+        },
+      },
     },
   });
 
+  // 6️⃣ Response
   res.status(201).json({
+    success: true,
     message: "User registered successfully",
     user: {
       id: user.id,
       email: user.email,
-      role: user.role,
+      roles: user.roles.map((r) => r.role.name),
     },
   });
 });

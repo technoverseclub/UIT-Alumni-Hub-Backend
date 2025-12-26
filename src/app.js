@@ -50,4 +50,10 @@ import emailRoutes from "./router/email.routes.js";
 app.use("/api/v1/email", emailRoutes);
 
 
+import autherRoutes from "./router/auther.routes.js";
+
+app.use("/api/v1/auth", autherRoutes);
+
+
+
 export { app };

@@ -1,52 +1,71 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { prisma } from "../../../lib/prisma.js";
-import  ApiError  from "../../utils/ApiError.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
+import { prisma } from "../../prismaClient.js";
+import ApiError from "../../utils/ApiError.js";
+import asyncHandler from "../../utils/asyncHandler.js";
 
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // validation
+  // 1️⃣ Validation
   if (!email || !password) {
-    throw new ApiError(400, "Email and password required");
+    throw new ApiError(400, "Email and password are required");
   }
 
-  // check user
+  // 2️⃣ Find user with roles
   const user = await prisma.user.findUnique({
     where: { email },
+    include: {
+      roles: {
+        include: {
+          role: true,
+        },
+      },
+    },
   });
 
   if (!user) {
-    throw new ApiError(401, "Invalid credentials");
+    throw new ApiError(401, "Invalid email or password");
   }
 
-  // compare password
-  const isPasswordCorrect = await bcrypt.compare(
+  // 3️⃣ Compare password (IMPORTANT: password_hash)
+  const isPasswordValid = await bcrypt.compare(
     password,
-    user.password
+    user.password_hash
   );
 
-  if (!isPasswordCorrect) {
-    throw new ApiError(401, "Invalid credentials");
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid email or password");
   }
 
-  // generate token
+  // 4️⃣ Extract role names
+  const roles = user.roles.map((r) => r.role.name);
+
+  // 5️⃣ Generate JWT
   const token = jwt.sign(
-    { userId: user.id, role: user.role },
+    {
+      userId: user.id,
+      roles,
+    },
     process.env.JWT_SECRET,
     { expiresIn: "1d" }
   );
 
-  // set cookie
+  // 6️⃣ Set cookie (JWT stored here)
   res.cookie("accessToken", token, {
     httpOnly: true,
-    secure: false, 
+    secure: false, // true in production (HTTPS)
     sameSite: "lax",
   });
 
+  // 7️⃣ Send response
   res.status(200).json({
+    success: true,
     message: "Login successful",
-    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      roles,
+    },
   });
 });
