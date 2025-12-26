@@ -1,4 +1,4 @@
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../prismaClient.js";
 import ApiError from "../../utils/ApiError.js";
@@ -66,6 +66,7 @@ export const loginUser = asyncHandler(async (req, res) => {
       id: user.id,
       email: user.email,
       roles,
+      token,
     },
   });
 });
