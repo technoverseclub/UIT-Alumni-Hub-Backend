@@ -13,6 +13,14 @@ app.use(
   })
 );
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "UIT Alumni Hub Backend is running 🚀"
+  });
+});
+
+
 // Body parsers
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
