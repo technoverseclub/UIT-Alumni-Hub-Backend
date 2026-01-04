@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
   host: process.env.BREVO_SMTP_HOST,
-  port: process.env.BREVO_SMTP_PORT,
+  port: Number(process.env.BREVO_SMTP_PORT),
   secure: false,
   auth: {
     user: process.env.BREVO_SMTP_USER,
@@ -21,5 +21,6 @@ const sendEmail = async ({ to, subject, text, html }) => {
 };
 
 module.exports = sendEmail;
+
 
 
