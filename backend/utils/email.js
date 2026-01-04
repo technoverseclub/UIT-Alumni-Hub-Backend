@@ -1,33 +1,35 @@
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  host: process.env.BREVO_SMTP_HOST,
-  port: Number(process.env.BREVO_SMTP_PORT),
-  secure: false,
-  auth: {
-    user: process.env.BREVO_SMTP_USER,
-    pass: process.env.BREVO_SMTP_PASS,
-  },
-    tls: {
-    rejectUnauthorized: false, // 👈 IMPORTANT for Render
-  },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
+const axios = require("axios");
 
 const sendEmail = async ({ to, subject, text, html }) => {
-  return await transporter.sendMail({
-    from: '"Alumni Hub" <technoverseclub@gmail.com>', // Brevo verified sender
-    to,
-    subject,
-    text,
-    html,
-  });
+  try {
+    const res = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: {
+          name: "Alumni Hub",
+          email: "technoverseclub@gmail.com", // verified sender
+        },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+        htmlContent: html,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "content-type": "application/json",
+          accept: "application/json",
+        },
+        timeout: 10000,
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error("BREVO API ERROR:", err.response?.data || err.message);
+    throw err;
+  }
 };
 
 module.exports = sendEmail;
-
-
-
 
