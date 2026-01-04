@@ -1,21 +1,30 @@
 const authService = require("../services/auth.service");
-
-const sendEmail = require("../utils/email");
-const { generateOTP } = require("../utils/otp");
+const sendEmail = require("../../utils/email");
+const { generateOTP } = require("../../utils/otp");
 
 const otp = generateOTP();
 
-await sendEmail({
-  to: user.email,
-  subject: "OTP Verification",
-  text: `Your OTP is ${otp}`,
-});
-
 exports.signupRequestOTP = async (req, res) => {
   try {
-    await authService.requestSignupOTP(req.body);
+    // 1️⃣ Generate OTP
+    const otp = generateOTP();
+
+    // 2️⃣ Send email
+    await sendEmail({
+      to: req.body.email,
+      subject: "OTP Verification",
+      text: `Your OTP is ${otp}`,
+    });
+
+    // 3️⃣ Save OTP via service
+    await authService.requestSignupOTP({
+      ...req.body,
+      otp,
+    });
+
     res.json({ message: "OTP sent" });
   } catch (e) {
+    console.error(e);
     res.status(400).json({ error: e.message });
   }
 };
@@ -47,4 +56,5 @@ exports.loginVerify = async (req, res) => {
     res.status(400).json({ error: e.message });
   }
 };
+
 
