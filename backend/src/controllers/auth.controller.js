@@ -1,5 +1,16 @@
 const authService = require("../services/auth.service");
 
+const sendEmail = require("../utils/email");
+const { generateOTP } = require("../utils/otp");
+
+const otp = generateOTP();
+
+await sendEmail({
+  to: user.email,
+  subject: "OTP Verification",
+  text: `Your OTP is ${otp}`,
+});
+
 exports.signupRequestOTP = async (req, res) => {
   try {
     await authService.requestSignupOTP(req.body);
@@ -36,3 +47,4 @@ exports.loginVerify = async (req, res) => {
     res.status(400).json({ error: e.message });
   }
 };
+
