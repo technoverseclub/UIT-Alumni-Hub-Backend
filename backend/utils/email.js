@@ -1,16 +1,24 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.BREVO_SMTP_HOST,
+  port: process.env.BREVO_SMTP_PORT,
+  secure: false,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.BREVO_SMTP_USER,
+    pass: process.env.BREVO_SMTP_PASS,
   },
 });
 
-exports.sendOTP = (email, otp) =>
-  transporter.sendMail({
-    to: email,
-    subject: "OTP Verification",
-    text: `Your verification code is ${otp}. It expires in 5 minutes.`,
+const sendEmail = async ({ to, subject, text, html }) => {
+  return await transporter.sendMail({
+    from: '"Alumni Hub" <verified@email.com>', // Brevo verified sender
+    to,
+    subject,
+    text,
+    html,
   });
+};
+
+module.exports = sendEmail;
+
