@@ -40,12 +40,29 @@ exports.signupVerify = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    await authService.loginUser(req.body.email, req.body.password);
+    const otp = generateOTP(); // ✅ generate OTP here
+
+    // ✅ send OTP email
+    await sendEmail({
+      to: req.body.email,
+      subject: "Login OTP",
+      text: `Your OTP is ${otp}`,
+      html: `<h2>Your OTP is <b>${otp}</b></h2>`,
+    });
+
+    // ✅ pass otp to service
+    await authService.loginUser(
+      req.body.email,
+      req.body.password,
+      otp
+    );
+
     res.json({ message: "OTP sent" });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 };
+
 
 exports.loginVerify = async (req, res) => {
   try {
@@ -56,5 +73,6 @@ exports.loginVerify = async (req, res) => {
     res.status(400).json({ error: e.message });
   }
 };
+
 
 
