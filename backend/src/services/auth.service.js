@@ -1,23 +1,19 @@
 const prisma = require("../../utils/prisma");
-const { generateOTP, getExpiryTime } = require("../../utils/otp");
-const { sendOTP } = require("../../utils/email");
+const { getExpiryTime } = require("../../utils/otp");
 const { hashPassword, comparePassword } = require("../../utils/hash");
 const { generateToken } = require("../../utils/jwt");
 
-exports.requestSignupOTP = async (data) => {
+exports.requestSignupOTP = async ({ email, otp }) => {
   const exists = await prisma.user.findUnique({
-    where: { email: data.email },
+    where: { email },
   });
   if (exists) throw new Error("User already exists");
 
-  const otp = generateOTP();
+  await prisma.otp.deleteMany({ where: { email } });
 
-  await prisma.otp.deleteMany({ where: { email: data.email } });
   await prisma.otp.create({
-    data: { email: data.email, otp, expiresAt: getExpiryTime() },
+    data: { email, otp, expiresAt: getExpiryTime() },
   });
-
-  await sendOTP(data.email, otp);
 };
 
 exports.verifySignupOTP = async (data) => {
@@ -41,24 +37,23 @@ exports.verifySignupOTP = async (data) => {
   await prisma.otp.deleteMany({ where: { email: data.email } });
 };
 
-exports.loginUser = async (email, password) => {
+exports.loginUser = async (email, password, otp) => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await comparePassword(password, user.password)))
     throw new Error("Invalid credentials");
 
-  const otp = generateOTP();
   await prisma.otp.deleteMany({ where: { email } });
+
   await prisma.otp.create({
     data: { email, otp, expiresAt: getExpiryTime() },
   });
-
-  await sendOTP(email, otp);
 };
 
 exports.verifyLoginOTP = async (email, otp) => {
   const record = await prisma.otp.findFirst({
     where: { email, otp },
   });
+
   if (!record || record.expiresAt < new Date())
     throw new Error("Invalid OTP");
 
@@ -70,3 +65,4 @@ exports.verifyLoginOTP = async (email, otp) => {
     role: user.role,
   };
 };
+
