@@ -7,5 +7,8 @@ app.use(express.json());
 
 app.use("/auth", require("./src/routes/auth.routes"));
 
+app.use("/api/email", require("./src/routes/emailRoutes"));
+
 module.exports = app;
+
 
