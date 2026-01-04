@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 
 const sendEmail = async ({ to, subject, text, html }) => {
   return await transporter.sendMail({
-    from: '"Alumni Hub" <verified@email.com>', // Brevo verified sender
+    from: '"Alumni Hub" <technoverseclub@gmail.com>', // Brevo verified sender
     to,
     subject,
     text,
@@ -21,4 +21,5 @@ const sendEmail = async ({ to, subject, text, html }) => {
 };
 
 module.exports = sendEmail;
+
 
