@@ -6,4 +6,8 @@ router.post("/signup/verify", controller.signupVerify);
 router.post("/login", controller.login);
 router.post("/login/verify", controller.loginVerify);
 
+// NEW ROUTES
+router.post("/forgot-password/request-otp", forgotPasswordRequestOTP);
+router.post("/forgot-password/verify", forgotPasswordVerify);
+
 module.exports = router;

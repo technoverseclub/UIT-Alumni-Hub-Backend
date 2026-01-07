@@ -74,5 +74,38 @@ exports.loginVerify = async (req, res) => {
   }
 };
 
+exports.forgotPasswordRequestOTP = async (req, res) => {
+  try {
+    const otp = generateOTP();
 
+    await sendEmail({
+      to: req.body.email,
+      subject: "Password Reset OTP",
+      text: `Your OTP to reset password is ${otp}`,
+      html: `<h2>Your OTP to reset password is <b>${otp}</b></h2>`
+    });
 
+    await authService.requestForgotPasswordOTP({
+      email: req.body.email,
+      otp,
+    });
+
+    res.json({ message: "Reset OTP sent" });
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ error: e.message });
+  }
+};
+
+exports.forgotPasswordVerify = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    await authService.verifyForgotPasswordOTP(email, otp, newPassword);
+
+    res.json({ message: "Password reset successful" });
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ error: e.message });
+  }
+};
