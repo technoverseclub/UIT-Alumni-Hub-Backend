@@ -7,7 +7,7 @@ router.post("/login", controller.login);
 router.post("/login/verify", controller.loginVerify);
 
 // NEW ROUTES
-router.post("/forgot-password/request-otp", forgotPasswordRequestOTP);
-router.post("/forgot-password/verify", forgotPasswordVerify);
+router.post("/forgot-password/request-otp", controller.forgotPasswordRequestOTP);
+router.post("/forgot-password/verify", controller.forgotPasswordVerify);
 
 module.exports = router;
