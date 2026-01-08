@@ -75,7 +75,7 @@ exports.requestForgotPasswordOTP = async ({ email, otp }) => {
   if (!user) throw new Error("User does not exist");
 
   // 2️⃣ Save OTP
-  await prisma.otpCode.create({
+  await prisma.otp.create({
     data: {
       user_id: user.id,
       otp: otp,
@@ -92,7 +92,7 @@ exports.verifyForgotPasswordOTP = async (email, otp, newPassword) => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error("User not found");
 
-  const otpRecord = await prisma.otpCode.findFirst({
+  const otpRecord = await prisma.otp.findFirst({
     where: {
       user_id: user.id,
       otp: otp,
@@ -113,7 +113,7 @@ exports.verifyForgotPasswordOTP = async (email, otp, newPassword) => {
   });
 
   // 2️⃣ Mark OTP used
-  await prisma.otpCode.update({
+  await prisma.otp.update({
     where: { id: otpRecord.id },
     data: { is_used: true },
   });
