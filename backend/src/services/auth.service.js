@@ -74,13 +74,16 @@ exports.requestForgotPasswordOTP = async ({ email, otp }) => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error("User does not exist");
 
+   await prisma.otpCode.deleteMany({ where: { userId: user.id } });
+
   // 2️⃣ Save OTP
-  await prisma.otp.create({
+  await prisma.otpCode.create({
     data: {
-      user_id: user.id,
+      userId: user.id,
       otp: otp,
       purpose: "RESET_PASSWORD",
-      expires_at: new Date(Date.now() + 15 * 60 * 1000), // 15 min expire
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 min expire
+      isUsed: false,
     }
   });
 
@@ -92,20 +95,20 @@ exports.verifyForgotPasswordOTP = async (email, otp, newPassword) => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error("User not found");
 
-  const otpRecord = await prisma.otp.findFirst({
+  const otpRecord = await prisma.otpCode.findFirst({
     where: {
-      user_id: user.id,
+      userId: user.id,
       otp: otp,
       purpose: "RESET_PASSWORD",
-      is_used: false,
-      expires_at: { gt: new Date() },
+      isUsed: false,
+      expiresAt: { gt: new Date() },
     },
   });
 
   if (!otpRecord) throw new Error("Invalid or expired OTP");
 
   // 1️⃣ Update password (hash it)
-  const hashed = await bcrypt.hash(newPassword, 10);
+  const hashed = await hashPassword(newPassword, 10);
 
   await prisma.user.update({
     where: { id: user.id },
@@ -113,9 +116,9 @@ exports.verifyForgotPasswordOTP = async (email, otp, newPassword) => {
   });
 
   // 2️⃣ Mark OTP used
-  await prisma.otp.update({
+  await prisma.otpCode.update({
     where: { id: otpRecord.id },
-    data: { is_used: true },
+    data: { isUsed: true },
   });
 
   return true;

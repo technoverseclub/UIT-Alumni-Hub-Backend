@@ -20,6 +20,8 @@ model User {
   password  String
   role      Role
   createdAt DateTime @default(now())
+
+  otpCodes  OtpCode[] 
 }
 
 model Otp {
@@ -27,4 +29,16 @@ model Otp {
   email     String
   otp       String
   expiresAt DateTime
+}
+
+model OtpCode {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  otp        String
+  purpose    String
+  isUsed     Boolean  @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
 }
