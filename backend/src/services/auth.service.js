@@ -21,20 +21,11 @@ exports.verifySignupOTP = async (data) => {
     where: { email: data.email, otp: data.otp },
   });
 
-  if (!record || record.expiresAt < new Date())
-    throw new Error("Invalid OTP");
-
-  await prisma.user.create({
-    data: {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      password: await hashPassword(data.password),
-      role: data.role,
-    },
-  });
+  if (!record || record.expiresAt < new Date()) throw new Error("Invalid OTP");
 
   await prisma.otp.deleteMany({ where: { email: data.email } });
+
+  return true;
 };
 
 exports.loginUser = async (email, password, otp) => {
@@ -54,8 +45,7 @@ exports.verifyLoginOTP = async (email, otp) => {
     where: { email, otp },
   });
 
-  if (!record || record.expiresAt < new Date())
-    throw new Error("Invalid OTP");
+  if (!record || record.expiresAt < new Date()) throw new Error("Invalid OTP");
 
   const user = await prisma.user.findUnique({ where: { email } });
   await prisma.otp.deleteMany({ where: { email } });
@@ -66,15 +56,13 @@ exports.verifyLoginOTP = async (email, otp) => {
   };
 };
 
-
-
 // Save OTP for password reset
 exports.requestForgotPasswordOTP = async ({ email, otp }) => {
   // 1️⃣ Find user
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error("User does not exist");
 
-   await prisma.otpCode.deleteMany({ where: { userId: user.id } });
+  await prisma.otpCode.deleteMany({ where: { userId: user.id } });
 
   // 2️⃣ Save OTP
   await prisma.otpCode.create({
@@ -84,7 +72,7 @@ exports.requestForgotPasswordOTP = async ({ email, otp }) => {
       purpose: "RESET_PASSWORD",
       expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 min expire
       isUsed: false,
-    }
+    },
   });
 
   return true;
