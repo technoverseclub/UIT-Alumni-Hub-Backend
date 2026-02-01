@@ -3,40 +3,65 @@ const { getExpiryTime } = require("../../utils/otp");
 const { hashPassword, comparePassword } = require("../../utils/hash");
 const { generateToken } = require("../../utils/jwt");
 
-exports.requestSignupOTP = async ({ email, otp }) => {
+exports.requestSignupOTP = async ({ role, email, otp }) => {
+  if (!email) throw new Error("Email is required");
+  if (!role) throw new Error("Role is required");
+
   const exists = await prisma.user.findUnique({
     where: { email },
   });
   if (exists) throw new Error("User already exists");
 
-  await prisma.otp.deleteMany({ where: { email } });
+  await prisma.otp.deleteMany({ where: { email, purpose: "SIGNUP" } });
 
   await prisma.otp.create({
-    data: { email, otp, expiresAt: getExpiryTime() },
+    data: { email, otp, purpose: "SIGNUP", expiresAt: getExpiryTime() },
   });
 };
 
-exports.verifySignupOTP = async (data) => {
+exports.verifySignupOTP = async ({ name, role, email, otp }) => {
+  if (!name) throw new Error("Name is required");
+  if (!email || !otp) throw new Error("Email and OTP required");
+
   const record = await prisma.otp.findFirst({
-    where: { email: data.email, otp: data.otp },
+    where: {
+      email,
+      otp,
+      purpose: "SIGNUP",
+      isUsed: false,
+      expiresAt: { gt: new Date() },
+    },
   });
 
   if (!record || record.expiresAt < new Date()) throw new Error("Invalid OTP");
 
-  await prisma.otp.deleteMany({ where: { email: data.email } });
+  const exists = await prisma.user.findUnique({ where: { email } });
+  if (exists) throw new Error("User already exists");
 
-  return true;
+  const user = await prisma.user.create({
+    data: {
+      email,
+      name,
+      role,
+    },
+  });
+
+  await prisma.otp.update({
+    where: { id: record.id },
+    data: { isUsed: true },
+  });
+
+  return user;
 };
 
-exports.loginUser = async (email, password, otp) => {
+exports.loginUser = async (email, otp) => {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await comparePassword(password, user.password)))
-    throw new Error("Invalid credentials");
+  if (!user) throw new Error("User not found");
 
   await prisma.otp.deleteMany({ where: { email } });
 
   await prisma.otp.create({
-    data: { email, otp, expiresAt: getExpiryTime() },
+    data: { email, otp, purpose: "LOGIN", expiresAt: getExpiryTime() },
   });
 };
 
