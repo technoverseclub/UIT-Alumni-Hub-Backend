@@ -21,7 +21,7 @@ model User {
   id        Int      @id @default(autoincrement())
   name      String
   email     String   @unique
-  phone     String?
+
   role      Role
   createdAt DateTime @default(now())
 
@@ -44,9 +44,16 @@ model Otp {
 model AlumniProfile {
   id             Int    @id @default(autoincrement())
   userId         Int    @unique
+
+  phone          String
+  batch          Int
+  branch         String
+
   graduationYear Int
   company        String
   position       String
+
+  linkedin       String?
   bio            String?
   imageUrl       String?
 

@@ -1,6 +1,10 @@
 const prisma = require("../../utils/prisma");
 const imagekit = require("../utils/imagekit");
 
+if (!data.phone || !data.batch || !data.branch) {
+  throw new Error("Phone, batch and branch are required");
+}
+
 exports.createProfile = async (userId, data, file) => {
   const exists = await prisma.alumniProfile.findUnique({
     where: { userId },
@@ -12,7 +16,7 @@ exports.createProfile = async (userId, data, file) => {
   // 1️⃣ Upload image if provided
   if (file) {
     const upload = await imagekit.upload({
-      file: file.buffer,
+      file: file.buffer.toString("base64"),
       fileName: `alumni_${userId}.jpg`,
       folder: "/alumni-profiles",
     });
@@ -27,9 +31,12 @@ exports.createProfile = async (userId, data, file) => {
   return prisma.alumniProfile.create({
     data: {
       userId,
-      graduationYear: Number(data.graduationYear),
+      phone: data.home,
+      batch: Number(data.batch),
+      branch: data.branch,
       company: data.company,
       position: data.position,
+      linkedin: data.linkedin || null,
       bio: data.bio || null,
       imageUrl,
     },
@@ -58,12 +65,13 @@ exports.updateProfile = async (userId, data, file) => {
   return prisma.alumniProfile.update({
     where: { userId },
     data: {
-      graduationYear: data.graduationYear
-        ? Number(data.graduationYear)
-        : undefined,
-      company: data.company,
-      position: data.position,
-      bio: data.bio,
+      phone: data.phone ?? undefined,
+      batch: data.batch ? Number(data.batch) : undefined,
+      branch: data.branch ?? undefined,
+      company: data.company ?? undefined,
+      position: data.position ?? undefined,
+      linkedin: data.linkedin ?? undefined,
+      bio: data.bio ?? undefined,
       ...(imageUrl && { imageUrl }), // only update if new image
     },
   });
