@@ -82,6 +82,7 @@ exports.me = async (req, res) => {
       id: user.id,
       email: user.email,
       role: user.role,
+      name: user.name,
       isProfileComplete: user.role === "ALUMNI" ? !!user.alumniProfile : true,
     });
   } catch (e) {

@@ -42,6 +42,12 @@ exports.createProfile = async (userId, data, file) => {
 exports.getMyProfile = async (userId) => {
   return prisma.alumniProfile.findUnique({
     where: { userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      alumniProfile: true,
+    },
   });
 };
 
