@@ -36,17 +36,27 @@ exports.createProfile = async (userId, data, file) => {
       bio: data.bio || null,
       imageUrl,
     },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
   });
 };
 
 exports.getMyProfile = async (userId) => {
   return prisma.alumniProfile.findUnique({
     where: { userId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      alumniProfile: true,
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
     },
   });
 };
