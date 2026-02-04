@@ -49,7 +49,6 @@ model AlumniProfile {
   batch          Int
   branch         String
 
-  graduationYear Int
   company        String
   position       String
 

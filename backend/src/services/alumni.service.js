@@ -1,14 +1,14 @@
 const prisma = require("../../utils/prisma");
 const imagekit = require("../utils/imagekit");
 
-if (!data.phone || !data.batch || !data.branch) {
-  throw new Error("Phone, batch and branch are required");
-}
-
 exports.createProfile = async (userId, data, file) => {
   const exists = await prisma.alumniProfile.findUnique({
     where: { userId },
   });
+
+  if (!data.phone || !data.batch || !data.branch) {
+    throw new Error("Phone, batch and branch are required");
+  }
   if (exists) throw new Error("Profile already exists");
 
   let imageUrl = null;
@@ -21,17 +21,13 @@ exports.createProfile = async (userId, data, file) => {
       folder: "/alumni-profiles",
     });
 
-    console.log("IMAGEKIT RESPONSE:", upload);
-
     imageUrl = upload.url;
   }
-
-  console.log("SAVING imageUrl:", imageUrl);
 
   return prisma.alumniProfile.create({
     data: {
       userId,
-      phone: data.home,
+      phone: data.phone,
       batch: Number(data.batch),
       branch: data.branch,
       company: data.company,
