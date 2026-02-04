@@ -25,6 +25,8 @@ model User {
   role      Role
   createdAt DateTime @default(now())
 
+  alumniProfile AlumniProfile?
+  studentProfile StudentProfile?
 }
 
 model Otp {
@@ -39,3 +41,23 @@ model Otp {
     @@index([email, purpose])
 }
 
+model AlumniProfile {
+  id             Int    @id @default(autoincrement())
+  userId         Int    @unique
+  graduationYear Int
+  company        String
+  position       String
+  bio            String?
+  imageUrl       String?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model StudentProfile {
+  id     Int @id @default(autoincrement())
+  userId Int @unique
+  branch String
+  year   Int
+
+  user User @relation(fields: [userId], references: [id])
+}

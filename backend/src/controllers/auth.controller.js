@@ -1,6 +1,7 @@
 const authService = require("../services/auth.service");
 const sendEmail = require("../../utils/email");
 const { generateOTP } = require("../../utils/otp");
+const prisma = require("../../utils/prisma");
 
 // const otp = generateOTP();
 
@@ -67,38 +68,43 @@ exports.loginVerify = async (req, res) => {
   }
 };
 
-exports.forgotPasswordRequestOTP = async (req, res) => {
+exports.me = async (req, res) => {
   try {
-    const otp = generateOTP();
-
-    await sendEmail({
-      to: req.body.email,
-      subject: "Password Reset OTP",
-      text: `Your OTP to reset password is ${otp}`,
-      html: `<h2>Your OTP to reset password is <b>${otp}</b></h2>`,
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: {
+        alumniProfile: true,
+        studentProfile: true,
+      },
     });
 
-    await authService.requestForgotPasswordOTP({
-      email: req.body.email,
-      otp,
+    res.json({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isProfileComplete: user.role === "ALUMNI" ? !!user.alumniProfile : true,
     });
-
-    res.json({ message: "Reset OTP sent" });
   } catch (e) {
-    console.error(e);
     res.status(400).json({ error: e.message });
   }
 };
 
-exports.forgotPasswordVerify = async (req, res) => {
-  try {
-    const { email, otp, newPassword } = req.body;
+// exports.me = async (req, res) => {
+//   try {
+//     const user = await prisma.user.findUnique({
+//       where: { id: req.user.id },
+//       select: {
+//         id: true,
+//         email: true,
+//         role: true,
+//       },
+//     });
 
-    await authService.verifyForgotPasswordOTP(email, otp, newPassword);
-
-    res.json({ message: "Password reset successful" });
-  } catch (e) {
-    console.error(e);
-    res.status(400).json({ error: e.message });
-  }
-};
+//     res.json({
+//       ...user,
+//       isProfileComplete: user.role === "ALUMNI" ? false : true,
+//     });
+//   } catch (e) {
+//     res.status(400).json({ error: e.message });
+//   }
+// };
