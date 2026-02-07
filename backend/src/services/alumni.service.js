@@ -2,6 +2,12 @@ const prisma = require("../../utils/prisma");
 const imagekit = require("../utils/imagekit");
 
 exports.createProfile = async (userId, data, file) => {
+  const { phone, batch, branch, company, position } = data;
+
+  // 🚨 HARD validation
+  if (!phone || !batch || !branch || !company || !position) {
+    throw new Error("All required fields must be filled");
+  }
   const exists = await prisma.alumniProfile.findUnique({
     where: { userId },
   });
@@ -35,6 +41,7 @@ exports.createProfile = async (userId, data, file) => {
       linkedin: data.linkedin || null,
       bio: data.bio || null,
       imageUrl,
+      isComplete: true,
     },
     include: {
       user: {
@@ -62,7 +69,15 @@ exports.getMyProfile = async (userId) => {
 };
 
 exports.updateProfile = async (userId, data, file) => {
-  let imageUrl;
+  const existing = await prisma.alumniProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!existing) {
+    throw new Error("Profile does not exist");
+  }
+
+  let imageUrl = existing.imageUrl;
 
   if (file) {
     const upload = await imagekit.upload({
@@ -74,17 +89,32 @@ exports.updateProfile = async (userId, data, file) => {
     imageUrl = upload.url;
   }
 
+  // Merge old + new values
+  const merged = {
+    phone: data.phone ?? existing.phone,
+    batch: data.batch ? Number(data.batch) : existing.batch,
+    branch: data.branch ?? existing.branch,
+    company: data.company ?? existing.company,
+    position: data.position ?? existing.position,
+  };
+
+  // 🔑 recompute completeness
+  const isComplete = Boolean(
+    merged.phone &&
+    merged.batch &&
+    merged.branch &&
+    merged.company &&
+    merged.position,
+  );
+
   return prisma.alumniProfile.update({
     where: { userId },
     data: {
-      phone: data.phone ?? undefined,
-      batch: data.batch ? Number(data.batch) : undefined,
-      branch: data.branch ?? undefined,
-      company: data.company ?? undefined,
-      position: data.position ?? undefined,
-      linkedin: data.linkedin ?? undefined,
-      bio: data.bio ?? undefined,
-      ...(imageUrl && { imageUrl }), // only update if new image
+      ...merged,
+      linkedin: data.linkedin ?? existing.linkedin,
+      bio: data.bio ?? existing.bio,
+      imageUrl,
+      isComplete,
     },
   });
 };

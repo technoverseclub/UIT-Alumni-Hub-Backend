@@ -83,7 +83,10 @@ exports.me = async (req, res) => {
       email: user.email,
       role: user.role,
       name: user.name,
-      isProfileComplete: user.role === "ALUMNI" ? !!user.alumniProfile : true,
+      isProfileComplete:
+        user.role === "ALUMNI"
+          ? !!user.alumniProfile?.isComplete === true
+          : true,
     });
   } catch (e) {
     res.status(400).json({ error: e.message });

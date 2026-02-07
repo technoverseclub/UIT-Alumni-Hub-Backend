@@ -54,7 +54,10 @@ model AlumniProfile {
 
   linkedin       String?
   bio            String?
-  imageUrl       String?
+
+  imageUrl       String
+
+  isComplete Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id])
 }
