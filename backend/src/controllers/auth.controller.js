@@ -38,7 +38,6 @@ exports.signupVerify = async (req, res) => {
       message: "Signup successful",
       token: result.token,
       role: result.role,
-      user: result.user,
     });
   } catch (e) {
     res.status(400).json({ error: e.message });
