@@ -32,8 +32,14 @@ exports.signupRequestOTP = async (req, res) => {
 
 exports.signupVerify = async (req, res) => {
   try {
-    await authService.verifySignupOTP(req.body);
-    res.json({ message: "Signup successful" });
+    const result = await authService.verifySignupOTP(req.body);
+    res.status(201).json({
+      success: true,
+      message: "Signup successful",
+      token: result.token,
+      role: result.role,
+      user: result.user,
+    });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }

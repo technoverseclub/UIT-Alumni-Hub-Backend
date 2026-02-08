@@ -51,7 +51,16 @@ exports.verifySignupOTP = async ({ name, role, email, otp }) => {
     data: { isUsed: true },
   });
 
-  return user;
+  const token = generateToken({
+    id: user.id,
+    role: user.role,
+  });
+
+  return {
+    token,
+    role: user.role,
+    user,
+  };
 };
 
 exports.loginUser = async (email, otp) => {
@@ -67,10 +76,21 @@ exports.loginUser = async (email, otp) => {
 
 exports.verifyLoginOTP = async (email, otp) => {
   const record = await prisma.otp.findFirst({
-    where: { email, otp },
+    where: {
+      email,
+      otp,
+      purpose: "LOGIN",
+      isUsed: false,
+      expiresAt: { gt: new Date() },
+    },
   });
 
   if (!record || record.expiresAt < new Date()) throw new Error("Invalid OTP");
+
+  await prisma.otp.update({
+    where: { id: record.id },
+    data: { isUsed: true },
+  });
 
   const user = await prisma.user.findUnique({ where: { email } });
   await prisma.otp.deleteMany({ where: { email } });
