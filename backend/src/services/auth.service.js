@@ -53,7 +53,7 @@ exports.verifySignupOTP = async ({ name, role, email, otp }) => {
 
   const token = generateToken({
     id: user.id,
-    role: user.role,
+    role: user.role.toUpperCase(),
   });
 
   return {
@@ -96,7 +96,7 @@ exports.verifyLoginOTP = async (email, otp) => {
   await prisma.otp.deleteMany({ where: { email } });
 
   return {
-    token: generateToken({ id: user.id, role: user.role }),
+    token: generateToken({ id: user.id, role: user.role.toUpperCase() }),
     role: user.role,
   };
 };
