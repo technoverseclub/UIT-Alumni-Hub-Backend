@@ -75,26 +75,10 @@ exports.loginVerify = async (req, res) => {
 
 exports.me = async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: {
-        alumniProfile: true,
-        studentProfile: true,
-      },
-    });
-
-    res.json({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      name: user.name,
-      isProfileComplete:
-        user.role === "ALUMNI"
-          ? !!user.alumniProfile?.isComplete === true
-          : true,
-    });
+    const data = await authService.getMe(req.user.id);
+    res.json(data);
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    res.status(e.statusCode || 400).json({ error: e.message });
   }
 };
 

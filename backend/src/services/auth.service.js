@@ -1,6 +1,6 @@
 const prisma = require("../../utils/prisma");
 const { getExpiryTime } = require("../../utils/otp");
-const { hashPassword, comparePassword } = require("../../utils/hash");
+const { hashPassword } = require("../../utils/hash");
 const { generateToken } = require("../../utils/jwt");
 
 exports.requestSignupOTP = async ({ role, email, otp }) => {
@@ -101,58 +101,83 @@ exports.verifyLoginOTP = async (email, otp) => {
   };
 };
 
-// Save OTP for password reset
-exports.requestForgotPasswordOTP = async ({ email, otp }) => {
-  // 1️⃣ Find user
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error("User does not exist");
-
-  await prisma.otpCode.deleteMany({ where: { userId: user.id } });
-
-  // 2️⃣ Save OTP
-  await prisma.otpCode.create({
-    data: {
-      userId: user.id,
-      otp: otp,
-      purpose: "RESET_PASSWORD",
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 min expire
-      isUsed: false,
+exports.getMe = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      alumniProfile: true,
+      studentProfile: true,
     },
   });
 
-  return true;
+  if (!user) {
+    const error = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    name: user.name,
+    isProfileComplete:
+      user.role === "ALUMNI" ? user.alumniProfile?.isComplete === true : true,
+  };
 };
+
+// Save OTP for password reset
+// exports.requestForgotPasswordOTP = async ({ email, otp }) => {
+//   // 1️⃣ Find user
+//   const user = await prisma.user.findUnique({ where: { email } });
+//   if (!user) throw new Error("User does not exist");
+
+//   await prisma.otpCode.deleteMany({ where: { userId: user.id } });
+
+//   // 2️⃣ Save OTP
+//   await prisma.otpCode.create({
+//     data: {
+//       userId: user.id,
+//       otp: otp,
+//       purpose: "RESET_PASSWORD",
+//       expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 min expire
+//       isUsed: false,
+//     },
+//   });
+
+//   return true;
+// };
 
 // Verify OTP and update password
-exports.verifyForgotPasswordOTP = async (email, otp, newPassword) => {
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error("User not found");
+// exports.verifyForgotPasswordOTP = async (email, otp, newPassword) => {
+//   const user = await prisma.user.findUnique({ where: { email } });
+//   if (!user) throw new Error("User not found");
 
-  const otpRecord = await prisma.otpCode.findFirst({
-    where: {
-      userId: user.id,
-      otp: otp,
-      purpose: "RESET_PASSWORD",
-      isUsed: false,
-      expiresAt: { gt: new Date() },
-    },
-  });
+//   const otpRecord = await prisma.otpCode.findFirst({
+//     where: {
+//       userId: user.id,
+//       otp: otp,
+//       purpose: "RESET_PASSWORD",
+//       isUsed: false,
+//       expiresAt: { gt: new Date() },
+//     },
+//   });
 
-  if (!otpRecord) throw new Error("Invalid or expired OTP");
+//   if (!otpRecord) throw new Error("Invalid or expired OTP");
 
-  // 1️⃣ Update password (hash it)
-  const hashed = await hashPassword(newPassword, 10);
+//   // 1️⃣ Update password (hash it)
+//   const hashed = await hashPassword(newPassword, 10);
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { password: hashed },
-  });
+//   await prisma.user.update({
+//     where: { id: user.id },
+//     data: { password: hashed },
+//   });
 
-  // 2️⃣ Mark OTP used
-  await prisma.otpCode.update({
-    where: { id: otpRecord.id },
-    data: { isUsed: true },
-  });
+//   // 2️⃣ Mark OTP used
+//   await prisma.otpCode.update({
+//     where: { id: otpRecord.id },
+//     data: { isUsed: true },
+//   });
 
-  return true;
-};
+//   return true;
+// };
