@@ -2,12 +2,22 @@ const prisma = require("../../utils/prisma");
 const imagekit = require("../utils/imagekit");
 
 exports.createProfile = async (userId, data, file) => {
+  console.log("FILE:", req.file);
+  console.log("IMAGE URL USED:", imageUrl);
   const { phone, batch, branch, company, position } = data;
 
   // 🚨 HARD validation
   if (!phone || !batch || !branch || !company || !position) {
     throw new Error("All required fields must be filled");
   }
+
+  if (!file) {
+    throw new Error("Image is required");
+  }
+
+  // ✅ ADD LOGS RIGHT HERE
+  console.log("FILE:", file);
+
   const exists = await prisma.alumniProfile.findUnique({
     where: { userId },
   });
@@ -28,6 +38,13 @@ exports.createProfile = async (userId, data, file) => {
     });
 
     imageUrl = upload.url;
+  }
+
+  console.log("IMAGE URL USED:", imageUrl);
+
+  // 🔴 if imageUrl is undefined → THIS is the bug
+  if (!imageUrl) {
+    throw new Error("Image upload failed");
   }
 
   return prisma.alumniProfile.create({
