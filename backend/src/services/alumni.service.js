@@ -2,8 +2,6 @@ const prisma = require("../../utils/prisma");
 const imagekit = require("../utils/imagekit");
 
 exports.createProfile = async (userId, data, file) => {
-  console.log("FILE:", req.file);
-  console.log("IMAGE URL USED:", imageUrl);
   const { phone, batch, branch, company, position } = data;
 
   // 🚨 HARD validation
@@ -22,9 +20,6 @@ exports.createProfile = async (userId, data, file) => {
     where: { userId },
   });
 
-  if (!data.phone || !data.batch || !data.branch) {
-    throw new Error("Phone, batch and branch are required");
-  }
   if (exists) throw new Error("Profile already exists");
 
   let imageUrl = null;
