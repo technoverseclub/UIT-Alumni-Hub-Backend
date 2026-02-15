@@ -17,13 +17,33 @@ const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
 // Attach Socket.IO to that server
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://uit-alumni-hub-frontend.vercel.app",
+];
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
+
+// const io = new Server(server, {
+//   cors: {
+//     origin: process.env.FRONTEND_URL,
+//     methods: ["GET", "POST"],
+//     credentials: true,
+//   },
+// });
 
 // ================= JWT AUTH MIDDLEWARE =================
 io.use((socket, next) => {

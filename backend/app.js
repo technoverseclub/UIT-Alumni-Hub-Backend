@@ -2,12 +2,32 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
+
+// app.use(
+//   cors({
+//     origin: process.env.FRONTEND_URL,
+//     credentials: true,
+//   }),
+// );
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://uit-alumni-hub-frontend.vercel.app",
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
+
 app.use(express.json());
 
 app.use("/auth", require("./src/routes/auth.routes"));
