@@ -11,12 +11,21 @@ const app = express();
 // );
 
 const allowedOrigins = [
-  "http://localhost:5173",
+  "http://localhost:5000",
   "https://uit-alumni-hub-frontend.vercel.app",
+  "https://hoppscotch.io",
+  "chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld",
 ];
 
 app.use(
   cors({
+    // origin: function (origin, callback) {
+    //   if (!origin || allowedOrigins.includes(origin)) {
+    //     callback(null, true);
+    //   } else {
+    //     callback(new Error("Not allowed by CORS"));
+    //   }
+    // },
     origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -24,6 +33,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
+
     credentials: true,
   }),
 );

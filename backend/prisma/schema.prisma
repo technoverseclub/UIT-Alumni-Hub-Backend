@@ -78,8 +78,14 @@ model Conversation {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
 
+   lastMessageAt DateTime?
+
+
+
   participants ConversationParticipant[]
   messages     Message[]
+
+   @@index([lastMessageAt])
 }
 
 model ConversationParticipant {

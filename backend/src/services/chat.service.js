@@ -103,65 +103,119 @@ const getUserConversations = async (userId) => {
               id: true,
               name: true,
               role: true,
+              alumniProfile: {
+                select: {
+                  batch: true,
+                  branch: true,
+                  imageUrl: true,
+                },
+              },
+              studentProfile: {
+                select: {
+                  branch: true,
+                  year: true,
+                },
+              },
             },
           },
         },
       },
       messages: {
-        orderBy: { createdAt: "desc" },
         take: 1,
+        orderBy: { createdAt: "desc" },
       },
     },
     orderBy: {
-      createdAt: "desc",
+      lastMessageAt: "desc",
     },
   });
 
   return conversations;
 };
 
-const sendMessage = async (conversationId, userId, content) => {
-  if (!conversationId || !content?.trim()) {
-    throw new Error("Missing required fields");
+const sendMessage = async (senderId, targetUserId, content) => {
+  if (!content?.trim()) {
+    throw new Error("Message content is required");
   }
 
-  // 1️⃣ Check conversation exists
-  const conversation = await prisma.conversation.findUnique({
-    where: { id: conversationId },
-    include: { participants: true },
+  if (senderId === targetUserId) {
+    throw new Error("Cannot message yourself");
+  }
+
+  // 1️⃣ Validate both users
+  const users = await prisma.user.findMany({
+    where: {
+      id: { in: [senderId, targetUserId] },
+    },
   });
 
-  if (!conversation) {
-    throw new Error("Conversation not found");
+  if (users.length !== 2) {
+    throw new Error("User not found");
   }
 
-  // 2️⃣ Check user is participant
-  const isParticipant = conversation.participants.some(
-    (participant) => participant.userId === userId,
-  );
+  const sender = users.find((u) => u.id === senderId);
+  const target = users.find((u) => u.id === targetUserId);
 
-  if (!isParticipant) {
-    throw new Error("Not authorized for this conversation");
+  // 2️⃣ Enforce Student ↔ Alumni rule
+  const validPair =
+    (sender.role === "STUDENT" && target.role === "ALUMNI") ||
+    (sender.role === "ALUMNI" && target.role === "STUDENT");
+
+  if (!validPair) {
+    throw new Error("Only student to alumni chat allowed");
   }
 
-  // 3️⃣ Create message
-  const message = await prisma.message.create({
-    data: {
-      content,
-      conversationId,
-      senderId: userId,
+  // 3️⃣ Check if conversation already exists
+  let conversation = await prisma.conversation.findFirst({
+    where: {
+      AND: [
+        { participants: { some: { userId: senderId } } },
+        { participants: { some: { userId: targetUserId } } },
+      ],
     },
-    include: {
-      sender: {
-        select: {
-          id: true,
-          name: true,
+  });
+
+  // 4️⃣ Create conversation ONLY if needed
+  if (!conversation) {
+    conversation = await prisma.conversation.create({
+      data: {
+        participants: {
+          create: [{ userId: senderId }, { userId: targetUserId }],
         },
       },
-    },
-  });
+    });
+  }
 
-  return message;
+  // 5️⃣ Create message + update conversation atomically
+  const [message] = await prisma.$transaction([
+    prisma.message.create({
+      data: {
+        content,
+        senderId,
+        conversationId: conversation.id,
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    }),
+
+    prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        lastMessageAt: new Date(),
+      },
+    }),
+  ]);
+
+  return {
+    conversationId: conversation.id,
+    message,
+  };
 };
 
 module.exports = {

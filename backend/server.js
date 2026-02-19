@@ -19,12 +19,21 @@ const server = http.createServer(app);
 // Attach Socket.IO to that server
 
 const allowedOrigins = [
-  "http://localhost:5173",
+  "http://localhost:5000",
   "https://uit-alumni-hub-frontend.vercel.app",
+  "https://hoppscotch.io",
+  "chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld",
 ];
 
 const io = new Server(server, {
   cors: {
+    // origin: function (origin, callback) {
+    //   if (!origin || allowedOrigins.includes(origin)) {
+    //     callback(null, true);
+    //   } else {
+    //     callback(new Error("Not allowed by CORS"));
+    //   }
+    // },
     origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -32,11 +41,11 @@ const io = new Server(server, {
         callback(new Error("Not allowed by CORS"));
       }
     },
+
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
-
 // const io = new Server(server, {
 //   cors: {
 //     origin: process.env.FRONTEND_URL,
@@ -76,6 +85,7 @@ io.on("connection", (socket) => {
 
   // Send message event
   socket.on("send_message", async (data) => {
+    console.log("RAW SOCKET DATA:", data, typeof data);
     if (typeof data === "string") {
       try {
         data = JSON.parse(data);
@@ -85,27 +95,48 @@ io.on("connection", (socket) => {
       }
     }
 
-    const conversationId = Number(data.conversationId);
-    const content = data.content;
+    // const conversationId = Number(data.conversationId);
+    const targetUserId = Number(data.targetUserId);
+    const conversationId = data.conversationId
+      ? Number(data.conversationId)
+      : null;
+
+    const content = String(data.content || "").trim();
+
+    if (!content) {
+      console.log("Parsed content is empty:", data);
+      return;
+    }
+
+    console.log(
+      "Calling sendMessage with:",
+      socket.user.id,
+      targetUserId,
+      content,
+    );
 
     try {
-      const message = await chatService.sendMessage(
-        conversationId,
+      const result = await chatService.sendMessage(
+        // conversationId,
+
         socket.user.id,
+        targetUserId,
         content,
       );
+
+      const { conversationId, message } = result;
 
       console.log("Incoming payload:", data);
 
       // Get participants
       const participants = await prisma.conversationParticipant.findMany({
-        where: { conversationId: Number(conversationId) },
+        where: { conversationId: result.conversationId },
       });
 
       participants.forEach((p) => {
         io.to(`user_${p.userId}`).emit("receive_message", {
           ...message,
-          conversationId: Number(conversationId),
+          conversationId,
         });
       });
     } catch (err) {

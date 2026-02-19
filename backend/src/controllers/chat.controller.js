@@ -46,12 +46,12 @@ const getUserConversations = async (req, res) => {
 
 const sendMessage = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { conversationId, content } = req.body;
+    const senderId = req.user.id;
+    const { targetUserId, content } = req.body;
 
     const message = await chatService.sendMessage(
-      Number(conversationId),
-      userId,
+      senderId,
+      targetUserId,
       content,
     );
 
