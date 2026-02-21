@@ -20,6 +20,7 @@ const server = http.createServer(app);
 
 const allowedOrigins = [
   "http://localhost:5000",
+  "http://localhost:5173",
   "https://uit-alumni-hub-frontend.vercel.app",
   "https://hoppscotch.io",
   "chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld",
@@ -34,16 +35,10 @@ const io = new Server(server, {
     //     callback(new Error("Not allowed by CORS"));
     //   }
     // },
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true,
 
     methods: ["GET", "POST"],
-    credentials: true,
+    credentials: false,
   },
 });
 // const io = new Server(server, {

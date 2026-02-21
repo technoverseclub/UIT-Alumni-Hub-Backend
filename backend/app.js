@@ -12,6 +12,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5000",
+  "http://localhost:5173",
   "https://uit-alumni-hub-frontend.vercel.app",
   "https://hoppscotch.io",
   "chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld",
