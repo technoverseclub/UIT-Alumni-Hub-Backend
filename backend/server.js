@@ -36,7 +36,7 @@ const io = new Server(server, {
       }
     },
     methods: ["GET", "POST"],
-    credentials: false,
+    credentials: true,
   },
 });
 // const io = new Server(server, {
