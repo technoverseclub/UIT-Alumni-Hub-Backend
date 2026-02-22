@@ -3,7 +3,7 @@ const router = express.Router();
 const chatController = require("../controllers/chat.controller");
 const { authMiddleware } = require("../middlewares/auth.middleware");
 
-// router.post("/conversation", authMiddleware, chatController.createConversation);
+router.post("/conversation", authMiddleware, chatController.createConversation);
 
 router.get(
   "/conversation/:conversationId/messages",
