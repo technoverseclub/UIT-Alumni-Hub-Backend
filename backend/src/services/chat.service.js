@@ -5,11 +5,9 @@ const createOrGetConversation = async (currentUserId, targetUserId) => {
     throw new Error("Cannot chat with yourself");
   }
 
-  // Fetch both users
+  // Validate users
   const users = await prisma.user.findMany({
-    where: {
-      id: { in: [currentUserId, targetUserId] },
-    },
+    where: { id: { in: [currentUserId, targetUserId] } },
   });
 
   if (users.length !== 2) {
@@ -19,7 +17,6 @@ const createOrGetConversation = async (currentUserId, targetUserId) => {
   const user1 = users.find((u) => u.id === currentUserId);
   const user2 = users.find((u) => u.id === targetUserId);
 
-  // 🔒 Enforce Student ↔ Alumni only
   const validPair =
     (user1.role === "STUDENT" && user2.role === "ALUMNI") ||
     (user1.role === "ALUMNI" && user2.role === "STUDENT");
@@ -28,37 +25,37 @@ const createOrGetConversation = async (currentUserId, targetUserId) => {
     throw new Error("Only student to alumni chat allowed");
   }
 
-  // Check if conversation already exists
+  // ✅ PRODUCTION SAFE CHECK
   const existingConversation = await prisma.conversation.findFirst({
     where: {
-      participants: {
-        every: {
-          userId: { in: [currentUserId, targetUserId] },
-        },
-      },
+      AND: [
+        { participants: { some: { userId: currentUserId } } },
+        { participants: { some: { userId: targetUserId } } },
+      ],
     },
     include: {
       participants: true,
     },
   });
 
-  if (existingConversation && existingConversation.participants.length === 2) {
+  if (existingConversation) {
     return existingConversation;
   }
 
-  // Create new conversation
-  const conversation = await prisma.conversation.create({
+  // Create new
+  return prisma.conversation.create({
     data: {
       participants: {
-        create: [{ userId: currentUserId }, { userId: targetUserId }],
+        create: [
+          { userId: currentUserId },
+          { userId: targetUserId },
+        ],
       },
     },
     include: {
       participants: true,
     },
   });
-
-  return conversation;
 };
 
 const getMessages = async (conversationId, userId) => {
