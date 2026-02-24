@@ -76,16 +76,17 @@ model StudentProfile {
 
 model Conversation {
   id        Int      @id @default(autoincrement())
+
+  // ⭐ UNIQUE PAIR KEY (Production Fix)
+  userPairKey String @unique
+
   createdAt DateTime @default(now())
-
-   lastMessageAt DateTime?
-
-
+  lastMessageAt DateTime?
 
   participants ConversationParticipant[]
-  messages     Message[]
+  messages Message[]
 
-   @@index([lastMessageAt])
+  @@index([lastMessageAt])
 }
 
 model ConversationParticipant {

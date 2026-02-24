@@ -1,5 +1,17 @@
 const prisma = require("../../utils/prisma");
 
+/* =====================================================
+   UTILS
+===================================================== */
+
+const buildPairKey = (id1, id2) => {
+  return id1 < id2 ? `${id1}_${id2}` : `${id2}_${id1}`;
+};
+
+/* =====================================================
+   CREATE OR GET CONVERSATION (PRODUCTION SAFE)
+===================================================== */
+
 const createOrGetConversation = async (currentUserId, targetUserId) => {
   if (currentUserId === targetUserId) {
     throw new Error("Cannot chat with yourself");
@@ -25,26 +37,14 @@ const createOrGetConversation = async (currentUserId, targetUserId) => {
     throw new Error("Only student to alumni chat allowed");
   }
 
-  // ✅ PRODUCTION SAFE CHECK
-  const existingConversation = await prisma.conversation.findFirst({
-    where: {
-      AND: [
-        { participants: { some: { userId: currentUserId } } },
-        { participants: { some: { userId: targetUserId } } },
-      ],
-    },
-    include: {
-      participants: true,
-    },
-  });
+  const pairKey = buildPairKey(currentUserId, targetUserId);
 
-  if (existingConversation) {
-    return existingConversation;
-  }
-
-  // Create new
-  return prisma.conversation.create({
-    data: {
+  // ⭐ UPSERT = NO DUPLICATE + RACE CONDITION SAFE
+  return prisma.conversation.upsert({
+    where: { userPairKey: pairKey },
+    update: {},
+    create: {
+      userPairKey: pairKey,
       participants: {
         create: [
           { userId: currentUserId },
@@ -58,13 +58,13 @@ const createOrGetConversation = async (currentUserId, targetUserId) => {
   });
 };
 
+/* =====================================================
+   GET MESSAGES
+===================================================== */
+
 const getMessages = async (conversationId, userId) => {
-  // Security: ensure user is participant
   const isParticipant = await prisma.conversationParticipant.findFirst({
-    where: {
-      conversationId,
-      userId,
-    },
+    where: { conversationId, userId },
   });
 
   if (!isParticipant) {
@@ -85,8 +85,12 @@ const getMessages = async (conversationId, userId) => {
   });
 };
 
+/* =====================================================
+   GET USER CONVERSATIONS
+===================================================== */
+
 const getUserConversations = async (userId) => {
-  const conversations = await prisma.conversation.findMany({
+  return prisma.conversation.findMany({
     where: {
       participants: {
         some: { userId },
@@ -126,9 +130,11 @@ const getUserConversations = async (userId) => {
       lastMessageAt: "desc",
     },
   });
-
-  return conversations;
 };
+
+/* =====================================================
+   SEND MESSAGE (FULL PRO SAFE)
+===================================================== */
 
 const sendMessage = async (senderId, targetUserId, content) => {
   if (!content?.trim()) {
@@ -139,7 +145,6 @@ const sendMessage = async (senderId, targetUserId, content) => {
     throw new Error("Cannot message yourself");
   }
 
-  // 1️⃣ Validate both users
   const users = await prisma.user.findMany({
     where: {
       id: { in: [senderId, targetUserId] },
@@ -153,7 +158,6 @@ const sendMessage = async (senderId, targetUserId, content) => {
   const sender = users.find((u) => u.id === senderId);
   const target = users.find((u) => u.id === targetUserId);
 
-  // 2️⃣ Enforce Student ↔ Alumni rule
   const validPair =
     (sender.role === "STUDENT" && target.role === "ALUMNI") ||
     (sender.role === "ALUMNI" && target.role === "STUDENT");
@@ -162,28 +166,24 @@ const sendMessage = async (senderId, targetUserId, content) => {
     throw new Error("Only student to alumni chat allowed");
   }
 
-  // 3️⃣ Check if conversation already exists
-  let conversation = await prisma.conversation.findFirst({
-    where: {
-      AND: [
-        { participants: { some: { userId: senderId } } },
-        { participants: { some: { userId: targetUserId } } },
-      ],
+  const pairKey = buildPairKey(senderId, targetUserId);
+
+  // ⭐ UPSERT SAFE CONVERSATION
+  const conversation = await prisma.conversation.upsert({
+    where: { userPairKey: pairKey },
+    update: {},
+    create: {
+      userPairKey: pairKey,
+      participants: {
+        create: [
+          { userId: senderId },
+          { userId: targetUserId },
+        ],
+      },
     },
   });
 
-  // 4️⃣ Create conversation ONLY if needed
-  if (!conversation) {
-    conversation = await prisma.conversation.create({
-      data: {
-        participants: {
-          create: [{ userId: senderId }, { userId: targetUserId }],
-        },
-      },
-    });
-  }
-
-  // 5️⃣ Create message + update conversation atomically
+  // ⭐ ATOMIC MESSAGE CREATE
   const [message] = await prisma.$transaction([
     prisma.message.create({
       data: {
