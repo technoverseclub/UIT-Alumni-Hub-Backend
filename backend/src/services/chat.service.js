@@ -90,7 +90,7 @@ const getMessages = async (conversationId, userId) => {
 ===================================================== */
 
 const getUserConversations = async (userId) => {
-  return prisma.conversation.findMany({
+  const conversations = await prisma.conversation.findMany({
     where: {
       participants: {
         some: { userId },
@@ -129,6 +129,35 @@ const getUserConversations = async (userId) => {
     orderBy: {
       lastMessageAt: "desc",
     },
+  });
+
+  // 🔥 ADD THIS PART
+  return conversations.map((conv) => {
+    const otherParticipant = conv.participants.find(
+      (p) => p.userId !== userId
+    );
+
+    const user = otherParticipant.user;
+
+    const profile =
+      user.role === "STUDENT"
+        ? user.studentProfile
+        : user.alumniProfile;
+
+    return {
+      id: conv.id,
+      lastMessageAt: conv.lastMessageAt,
+      lastMessage: conv.messages[0] || null,
+
+      otherUser: {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        branch: profile?.branch || null,
+        batch: profile?.batch || profile?.year || null,
+        imageUrl: profile?.imageUrl || null,
+      },
+    };
   });
 };
 
