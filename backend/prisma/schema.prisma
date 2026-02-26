@@ -76,9 +76,8 @@ model StudentProfile {
 
 model Conversation {
   id        Int      @id @default(autoincrement())
-
-  // ⭐ UNIQUE PAIR KEY (Production Fix)
-  userPairKey String @unique
+  
+  userPairKey String? @unique
 
   createdAt DateTime @default(now())
   lastMessageAt DateTime?
