@@ -85,19 +85,36 @@ exports.verifyLoginOTP = async (email, otp) => {
     },
   });
 
-  if (!record || record.expiresAt < new Date()) throw new Error("Invalid OTP");
+  if (!record) throw new Error("Invalid OTP");
 
   await prisma.otp.update({
     where: { id: record.id },
     data: { isUsed: true },
   });
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: {
+      alumniProfile: true,
+    },
+  });
+
   await prisma.otp.deleteMany({ where: { email } });
 
+  // 🔥 IMPORTANT PART
+  let isProfileComplete = true;
+
+  if (user.role === "ALUMNI") {
+    isProfileComplete = user.alumniProfile?.isComplete === true;
+  }
+
   return {
-    token: generateToken({ id: user.id, role: user.role.toUpperCase() }),
+    token: generateToken({
+      id: user.id,
+      role: user.role.toUpperCase(),
+    }),
     role: user.role,
+    isProfileComplete,
   };
 };
 
