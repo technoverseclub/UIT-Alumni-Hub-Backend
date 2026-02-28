@@ -66,8 +66,13 @@ model AlumniProfile {
 }
 
 model StudentProfile {
-  id        Int @id @default(autoincrement())
-  userId    Int @unique
+  id        Int     @id @default(autoincrement())
+  userId    Int     @unique
+
+  phone     String?
+  linkedin  String?
+  bio       String?
+
   branch    String
   year      Int
   

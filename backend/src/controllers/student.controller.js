@@ -2,7 +2,11 @@ const studentService = require("../services/student.service");
 
 exports.createProfile = async (req, res) => {
   try {
-    const profile = await studentService.createProfile(req.user.id, req.body);
+    const profile = await studentService.createProfile(
+  req.user.id,
+  req.body,
+  req.file   // 👈 pass file
+);
     res.status(201).json(profile);
   } catch (e) {
     res.status(400).json({ error: e.message });
