@@ -93,20 +93,20 @@ exports.verifyLoginOTP = async (email, otp) => {
   });
 
   const user = await prisma.user.findUnique({
-    where: { email },
-    include: {
-      alumniProfile: true,
-    },
-  });
+  where: { email },
+  include: {
+    alumniProfile: true,
+    studentProfile: true,
+  },
+});
 
   await prisma.otp.deleteMany({ where: { email } });
 
   // 🔥 IMPORTANT PART
-  let isProfileComplete = true;
-
-  if (user.role === "ALUMNI") {
-    isProfileComplete = user.alumniProfile?.isComplete === true;
-  }
+const isProfileComplete =
+  user.role === "ALUMNI"
+    ? user.alumniProfile?.isComplete === true
+    : user.studentProfile?.isComplete === true;
 
   return {
     token: generateToken({
@@ -133,13 +133,17 @@ exports.getMe = async (userId) => {
     throw error;
   }
 
+  const isProfileComplete =
+    user.role === "ALUMNI"
+      ? user.alumniProfile?.isComplete === true
+      : user.studentProfile?.isComplete === true;
+
   return {
     id: user.id,
     email: user.email,
     role: user.role,
     name: user.name,
-    isProfileComplete:
-      user.role === "ALUMNI" ? user.alumniProfile?.isComplete === true : true,
+    isProfileComplete,
   };
 };
 

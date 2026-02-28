@@ -7,11 +7,17 @@ exports.createProfile = async (userId, data) => {
 
   if (exists) throw new Error("Profile already exists");
 
+  const isComplete = Boolean(
+    data.branch &&
+    data.year
+  );
+
   return prisma.studentProfile.create({
     data: {
       userId,
       branch: data.branch,
       year: Number(data.year),
+      isComplete,
     },
   });
 };
@@ -23,11 +29,21 @@ exports.getMyProfile = async (userId) => {
 };
 
 exports.updateProfile = async (userId, data) => {
+  const merged = {
+    branch: data.branch,
+    year: Number(data.year),
+  };
+
+  const isComplete = Boolean(
+    merged.branch &&
+    merged.year
+  );
+
   return prisma.studentProfile.update({
     where: { userId },
     data: {
-      branch: data.branch,
-      year: Number(data.year),
+      ...merged,
+      isComplete,
     },
   });
 };

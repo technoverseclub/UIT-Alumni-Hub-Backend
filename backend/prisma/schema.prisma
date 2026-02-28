@@ -66,11 +66,13 @@ model AlumniProfile {
 }
 
 model StudentProfile {
-  id     Int @id @default(autoincrement())
-  userId Int @unique
-  branch String
-  year   Int
-  imageUrl String?
+  id        Int @id @default(autoincrement())
+  userId    Int @unique
+  branch    String
+  year      Int
+  imageUrl  String?
+
+  isComplete Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id])
 }
