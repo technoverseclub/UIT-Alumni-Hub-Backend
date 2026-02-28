@@ -1,7 +1,7 @@
 const prisma = require("../../utils/prisma");
+const imagekit = require("../utils/imagekit");
 
 exports.createProfile = async (userId, data, file) => {
-
   // 🔥 Required fields validation
   if (
     !data.phone ||
@@ -22,6 +22,23 @@ exports.createProfile = async (userId, data, file) => {
     throw new Error("Profile already exists");
   }
 
+  let imageUrl = null;
+
+  // Upload image
+  if (file) {
+    const upload = await imagekit.upload({
+      file: file.buffer.toString("base64"),
+      fileName: `student_${userId}.jpg`,
+      folder: "/student-profiles",
+    });
+
+    imageUrl = upload.url;
+  }
+
+  if (!imageUrl) {
+    throw new Error("Image upload failed");
+  }
+
   return prisma.studentProfile.create({
     data: {
       userId,
@@ -29,8 +46,8 @@ exports.createProfile = async (userId, data, file) => {
       linkedin: data.linkedin,
       bio: data.bio,
       branch: data.branch,
-      year: Number(data.year),   // 🔥 prevents NaN issue
-      imageUrl: file.originalname, // or file.filename / uploaded URL
+      year: Number(data.year), // prevents NaN issue
+      imageUrl,
       isComplete: true,
     },
   });
@@ -43,7 +60,6 @@ exports.getMyProfile = async (userId) => {
 };
 
 exports.updateProfile = async (userId, data, file) => {
-
   if (
     !data.phone ||
     !data.linkedin ||

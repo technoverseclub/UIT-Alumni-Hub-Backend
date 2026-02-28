@@ -9,7 +9,6 @@ const prisma = require("./utils/prisma");
 const chatService = require("./src/services/chat.service");
 
 const jwtUtils = require("./utils/jwt");
-console.log(jwtUtils);
 
 const PORT = process.env.PORT || 5000;
 

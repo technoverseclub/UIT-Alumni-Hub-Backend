@@ -16,7 +16,6 @@ const generateToken = (payload) => {
 // console.log("Verifying with secret:", process.env.JWT_SECRET);
 
 const verifyToken = (token) => {
-  console.log("Using secret for verification:", SECRET);
   // console.log("jwt.verify = ", jwt.verify(token, SECRET));
   return jwt.verify(token, SECRET);
 };
