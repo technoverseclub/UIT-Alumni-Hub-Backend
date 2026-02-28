@@ -7,7 +7,7 @@ const upload = require("../middlewares/upload")
 router.use(authMiddleware);
 router.use(requireRole("STUDENT"));
 
-router.post("/profile", upload.single("image"), studentController.createProfile);
+router.post("/profile", upload.single("photo"), studentController.createProfile);
 router.get("/profile", studentController.getMyProfile);
 router.put("/profile", studentController.updateProfile);
 router.get("/dashboard", studentController.getDashboard);
