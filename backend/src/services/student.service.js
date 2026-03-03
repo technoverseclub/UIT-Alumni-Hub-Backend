@@ -56,6 +56,9 @@ exports.createProfile = async (userId, data, file) => {
 exports.getMyProfile = async (userId) => {
   return prisma.studentProfile.findUnique({
     where: { userId },
+     include: {
+      user: true,
+    },
   });
 };
 
