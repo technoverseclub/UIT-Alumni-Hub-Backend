@@ -8,7 +8,7 @@ router.use(authMiddleware);
 router.use(requireRole("STUDENT"));
 
 router.post("/profile", upload.single("photo"), studentController.createProfile);
-router.get("/profile", studentController.getMyProfile);
+router.get("/profile/me", studentController.getMyProfile);
 router.put("/profile", studentController.updateProfile);
 router.get("/dashboard", studentController.getDashboard);
 
