@@ -139,14 +139,13 @@ exports.deleteProfile = async (userId) => {
 
 exports.getAllAlumni = async () => {
   return prisma.alumniProfile.findMany({
+    where: { isComplete: true },  
     include: {
       user: {
-        select: {
-          id: true,
-          name: true,
-        },
+        select: { id: true, name: true },
       },
     },
+    orderBy: { batch: "desc" }, 
   });
 };
 

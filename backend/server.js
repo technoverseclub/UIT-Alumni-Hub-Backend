@@ -89,16 +89,14 @@ io.on("connection", (socket) => {
 
     // const conversationId = Number(data.conversationId);
     const targetUserId = Number(data.targetUserId);
-    const conversationId = data.conversationId
-      ? Number(data.conversationId)
-      : null;
+const conversationId = data.conversationId
+  ? Number(data.conversationId)
+  : null;
 
-    const content = String(data.content || "").trim();
-
-    if (!content) {
-      console.log("Parsed content is empty:", data);
-      return;
-    }
+if (!targetUserId || isNaN(targetUserId)) {
+  console.log("Invalid targetUserId");
+  return;
+}
 
     console.log(
       "Calling sendMessage with:",
@@ -125,12 +123,14 @@ io.on("connection", (socket) => {
         where: { conversationId: result.conversationId },
       });
 
-      participants.forEach((p) => {
-        io.to(`user_${p.userId}`).emit("receive_message", {
-          ...message,
-          conversationId,
-        });
-      });
+participants.forEach((p) => {
+  if (p.userId !== socket.user.id) {
+    io.to(`user_${p.userId}`).emit("receive_message", {
+      ...message,
+      conversationId,
+    });
+  }
+});
     } catch (err) {
       console.log("Socket send error:", err.message);
     }

@@ -21,10 +21,12 @@ const getMessages = async (req, res) => {
     const { conversationId } = req.params;
     const userId = req.user.id;
 
-    const messages = await chatService.getMessages(
-      Number(conversationId),
-      userId,
-    );
+    const id = Number(conversationId);
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: "Invalid conversation ID" });
+    }
+
+    const messages = await chatService.getMessages(id, userId);
 
     res.status(200).json(messages);
   } catch (err) {
