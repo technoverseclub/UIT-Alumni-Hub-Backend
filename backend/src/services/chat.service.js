@@ -40,22 +40,46 @@ const createOrGetConversation = async (currentUserId, targetUserId) => {
   const pairKey = buildPairKey(currentUserId, targetUserId);
 
   // ⭐ UPSERT = NO DUPLICATE + RACE CONDITION SAFE
-  return prisma.conversation.upsert({
-    where: { userPairKey: pairKey },
-    update: {},
-    create: {
-      userPairKey: pairKey,
-      participants: {
-        create: [
-          { userId: currentUserId },
-          { userId: targetUserId },
-        ],
+return prisma.conversation.upsert({
+  where: { userPairKey: pairKey },
+  update: {},
+  create: {
+    userPairKey: pairKey,
+    participants: {
+      create: [
+        { userId: currentUserId },
+        { userId: targetUserId },
+      ],
+    },
+  },
+  include: {
+    participants: {
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            alumniProfile: {
+              select: {
+                batch: true,
+                branch: true,
+                imageUrl: true,
+              },
+            },
+            studentProfile: {
+              select: {
+                branch: true,
+                year: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
       },
     },
-    include: {
-      participants: true,
-    },
-  });
+  },
+});
 };
 
 /* =====================================================
