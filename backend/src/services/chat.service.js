@@ -115,6 +115,7 @@ const getUserConversations = async (userId) => {
                 select: {
                   branch: true,
                   year: true,
+                  imageUrl: true,
                 },
               },
             },
